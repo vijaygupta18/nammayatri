@@ -1,4 +1,4 @@
-name: Beam File KV Key Check
+name: Beam Folder Change
 
 on:
   push:
