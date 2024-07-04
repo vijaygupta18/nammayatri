@@ -1,0 +1,43 @@
+name: Beam File KV Key Check
+
+on:
+  push:
+    paths:
+      - '**/Beam/**'
+  pull_request:
+    paths:
+      - '**/Beam/**'
+
+jobs:
+  check-line-change:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Get the diff
+        run: git diff HEAD~1 HEAD -- '**/Beam/**' > diff.txt
+
+      - name: Check for $(enableKVP changes in Beam folder
+        id: check_lines
+        run: |
+          PATTERN='\$\(enableKVP'
+          FILES_CHANGED=$(git diff --name-only HEAD~1 HEAD -- '**/Beam/**')
+          ALERT=false
+          for FILE in $FILES_CHANGED; do
+            if grep -q "$PATTERN" diff.txt | grep "$FILE"; then
+              echo "Line containing $PATTERN in $FILE has been changed."
+              ALERT=true
+            fi
+          done
+          if [ "$ALERT" = true ]; then
+            echo "::set-output name=alert::true"
+          else
+            echo "No changes detected in lines containing $PATTERN in any file in the Beam folder."
+            echo "::set-output name=alert::false"
+          fi
+
+      - name: Alert if line changed
+        if: steps.check_lines.outputs.alert == 'true'
+        run: echo "Alert: Line containing \$(enableKVP in one or more files in the Beam folder has been changed."
